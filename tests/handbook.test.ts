@@ -1,5 +1,6 @@
+import { readFile } from 'node:fs/promises';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { extract } from '../src/index.js';
+import { extract, extractFromBuffer } from '../src/index.js';
 import type { Document } from '../src/types.js';
 
 const HANDBOOK = 'docs/Hearst_Ranch_Winery_Employee_Handbook_529776_en.1.pdf';
@@ -60,5 +61,24 @@ describe('handbook fixture (font path)', () => {
     expect(overridden.sections.length).toBeGreaterThanOrEqual(50);
     const numbered = overridden.sections.filter((s) => /^\d+(\.\d+)+/.test(s.title));
     expect(numbered.length).toBeGreaterThan(20);
+  });
+});
+
+describe('extractFromBuffer input shapes', () => {
+  it('accepts a Node Buffer (pdfjs-dist would otherwise reject it)', async () => {
+    const buf = await readFile(HANDBOOK);
+    const doc = await extractFromBuffer(buf, HANDBOOK);
+    expect(doc.sections.length).toBeGreaterThan(0);
+  });
+
+  it('accepts a Uint8Array view over a pooled ArrayBuffer (e.g. Buffer.subarray)', async () => {
+    const buf = await readFile(HANDBOOK);
+    // Force a partial-buffer view by allocating extra and slicing back.
+    const padded = Buffer.allocUnsafe(buf.byteLength + 32);
+    buf.copy(padded, 16);
+    const view = new Uint8Array(padded.buffer, padded.byteOffset + 16, buf.byteLength);
+    expect(view.byteLength).not.toBe(view.buffer.byteLength);
+    const doc = await extractFromBuffer(view, HANDBOOK);
+    expect(doc.sections.length).toBeGreaterThan(0);
   });
 });

@@ -5,7 +5,7 @@ export async function extract(pdfPath, opts = {}) {
     return extractFromBuffer(data, pdfPath, opts);
 }
 export async function extractFromBuffer(data, source, opts = {}) {
-    const { lines, pageCount, title, outline } = await extractLines(data);
+    const { lines, pageCount, title, outline } = await extractLines(toCleanUint8Array(data));
     const strategy = opts.strategy ?? 'auto';
     const useOutline = strategy === 'outline' || (strategy === 'auto' && shouldUseOutline(outline));
     const sections = useOutline
@@ -18,5 +18,15 @@ export async function extractFromBuffer(data, source, opts = {}) {
         sections,
         strategy: useOutline ? 'outline' : 'font',
     };
+}
+// pdfjs-dist (the underlying parser) rejects Node `Buffer` outright with
+// `Please provide binary data as Uint8Array, rather than Buffer.`, and rejects
+// Uint8Array views over a pooled ArrayBuffer (e.g. `Buffer.subarray(...)`) by
+// silently re-copying them. Both are practical inputs for any Node consumer
+// (busboy, fs.readFile). Normalize once, here, so callers can pass whatever
+// they have and not eat the leaky abstraction.
+function toCleanUint8Array(data) {
+    const isPlainFullView = data.constructor === Uint8Array && data.byteLength === data.buffer.byteLength;
+    return isPlainFullView ? data : new Uint8Array(data);
 }
 //# sourceMappingURL=index.js.map

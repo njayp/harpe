@@ -1,5 +1,9 @@
 UPDATE THIS FILE (CLAUDE.md) AND README.md AS NEEDED
 
+## Before Committing
+
+- Run `npm run build` and ensure the project builds successfully and dist gets committed
+
 ## Claude-Code Plan Guidelines
 
 **Context:** Explain why this change is needed — the problem, what prompted it, and the intended outcome.
