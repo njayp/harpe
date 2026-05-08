@@ -64,6 +64,18 @@ describe('handbook fixture (font path)', () => {
   });
 });
 
+describe('pdfjs worker registration', () => {
+  it('registers WorkerMessageHandler on globalThis so bundled consumers skip the dynamic-import path', async () => {
+    // The static import in src/pdf.ts assigns globalThis.pdfjsWorker. This is
+    // the pin that prevents pdfjs-dist from falling through to its
+    // `await import(workerSrc)` branch in a bundled (esbuild / webpack) build.
+    await import('../src/index.js');
+    const reg = (globalThis as { pdfjsWorker?: { WorkerMessageHandler?: unknown } }).pdfjsWorker;
+    expect(reg).toBeDefined();
+    expect(typeof reg?.WorkerMessageHandler).toBe('function');
+  });
+});
+
 describe('extractFromBuffer input shapes', () => {
   it('accepts a Node Buffer (pdfjs-dist would otherwise reject it)', async () => {
     const buf = await readFile(HANDBOOK);

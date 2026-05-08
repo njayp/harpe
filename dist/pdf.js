@@ -2,23 +2,28 @@ import { readFile } from 'node:fs/promises';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — pdfjs-dist legacy build ships its own .mjs without published types.
 import * as pdfjs from 'pdfjs-dist/legacy/build/pdf.mjs';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore — same untyped .mjs.
+import { WorkerMessageHandler } from 'pdfjs-dist/legacy/build/pdf.worker.mjs';
 import { squish } from './sections.js';
+// pdfjs-dist's main thread tries to spin up a fake worker by dynamically
+// importing pdf.worker.mjs at runtime, which fails the moment harpe is
+// bundled into a single file (esbuild for Cloud Functions, etc.) — the
+// worker file isn't on disk at the path pdfjs resolves. Pre-registering
+// `globalThis.pdfjsWorker.WorkerMessageHandler` makes pdfjs use this
+// statically-imported copy instead of dynamic-importing one. See
+// pdfjs-dist/legacy/build/pdf.mjs `_setupFakeWorkerGlobal` /
+// `mainThreadWorkerMessageHandler` for the lookup.
+globalThis.pdfjsWorker ??= {
+    WorkerMessageHandler,
+};
 async function openDocument(data) {
     // pdfjs-dist's loader accepts useWorkerFetch:false but the legacy build's typings
     // are loose — cast to any rather than re-declare every accepted flag.
-    //
-    // disableWorker:true forces the parser to run inline on the main thread.
-    // Without it, pdfjs-dist tries to dynamically `import('pdf.worker.mjs')`
-    // relative to its own resolved package path; that fails the moment harpe
-    // is bundled into a single file (esbuild for Cloud Functions, webpack for
-    // serverless platforms, etc.) because the worker file isn't on disk at
-    // the expected location anymore. Server-side PDF parsing has no use for
-    // a worker thread anyway.
     const loadingTask = pdfjs.getDocument({
         data,
         isEvalSupported: false,
         useWorkerFetch: false,
-        disableWorker: true,
     });
     return loadingTask.promise;
 }
