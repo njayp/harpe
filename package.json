@@ -1,0 +1,44 @@
+{
+  "name": "harpe",
+  "version": "0.1.0",
+  "description": "PDF → sections library. Returns an in-memory document of titled, paginated sections; no persistence, no embeddings.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "bin": {
+    "harpe": "./bin/harpe.js"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint 'src/**/*.ts' 'tests/**/*.ts'",
+    "lint:fix": "eslint --fix 'src/**/*.ts' 'tests/**/*.ts'",
+    "test": "vitest run",
+    "smoke": "npm run build && node bin/harpe.js docs/hearst.ranch.winery.tasting.room.guide.1.pdf --titles-only | grep -q 'tock-host-training' && node bin/harpe.js docs/Hearst_Ranch_Winery_Employee_Handbook_529776_en.1.pdf --titles-only | grep -qE '^[0-9]+(-[0-9]+)+-'"
+  },
+  "dependencies": {
+    "pdfjs-dist": "^4.7.76"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.0",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
