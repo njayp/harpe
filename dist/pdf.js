@@ -6,10 +6,19 @@ import { squish } from './sections.js';
 async function openDocument(data) {
     // pdfjs-dist's loader accepts useWorkerFetch:false but the legacy build's typings
     // are loose — cast to any rather than re-declare every accepted flag.
+    //
+    // disableWorker:true forces the parser to run inline on the main thread.
+    // Without it, pdfjs-dist tries to dynamically `import('pdf.worker.mjs')`
+    // relative to its own resolved package path; that fails the moment harpe
+    // is bundled into a single file (esbuild for Cloud Functions, webpack for
+    // serverless platforms, etc.) because the worker file isn't on disk at
+    // the expected location anymore. Server-side PDF parsing has no use for
+    // a worker thread anyway.
     const loadingTask = pdfjs.getDocument({
         data,
         isEvalSupported: false,
         useWorkerFetch: false,
+        disableWorker: true,
     });
     return loadingTask.promise;
 }
