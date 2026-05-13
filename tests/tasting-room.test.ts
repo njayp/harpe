@@ -27,7 +27,7 @@ describe('tasting-room fixture (outline path)', () => {
     for (let i = 1; i < doc.sections.length; i++) {
       const prev = doc.sections[i - 1]!;
       const cur = doc.sections[i]!;
-      expect(cur.pageStart).toBeGreaterThan(prev.pageStart);
+      expect(cur.pageStart).toBeGreaterThanOrEqual(prev.pageStart);
       expect(cur.pageStart).toBeGreaterThanOrEqual(prev.pageEnd);
     }
   });

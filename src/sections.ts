@@ -198,7 +198,7 @@ function dedupeOutline(outline: OutlineEntry[]): OutlineEntry[] {
   const out: OutlineEntry[] = [];
   for (const entry of outline) {
     const last = out[out.length - 1];
-    if (last && entry.pageNumber === last.pageNumber) continue;
+    if (last && entry.pageNumber === last.pageNumber && entry.title === last.title) continue;
     out.push(entry);
   }
   return out;
@@ -232,10 +232,18 @@ export function sanityCheck(sections: Section[], minSectionChars: number): void 
     throw new Error('section detection produced 0 sections — likely miscalibrated');
   }
   const floor = minSectionChars / 2;
-  const tooShort = sections.filter((s) => s.text.length < floor);
-  if (tooShort.length > sections.length / 2) {
+  // Empty sections are by-design in the outline path (a chapter header that
+  // shares a page with its first subsection legitimately yields empty text —
+  // see `byOutline`); they're not the heuristic-fragmentation failure mode
+  // this guard catches.
+  const withText = sections.filter((s) => s.text.length > 0);
+  if (withText.length === 0) {
+    throw new Error('section detection produced 0 non-empty sections — likely miscalibrated');
+  }
+  const tooShort = withText.filter((s) => s.text.length < floor);
+  if (tooShort.length > withText.length / 2) {
     throw new Error(
-      `${tooShort.length}/${sections.length} sections fell below ${floor} chars — heuristic likely fragmenting`,
+      `${tooShort.length}/${withText.length} sections fell below ${floor} chars — heuristic likely fragmenting`,
     );
   }
 }

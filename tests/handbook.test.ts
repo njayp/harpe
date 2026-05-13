@@ -4,6 +4,7 @@ import { extract, extractFromBuffer } from '../src/index.js';
 import type { Document } from '../src/types.js';
 
 const HANDBOOK = 'docs/Hearst_Ranch_Winery_Employee_Handbook_529776_en.1.pdf';
+const HANDBOOK_BOOKMARKED = 'docs/Hearst_Ranch_Winery_Employee_Handbook_bookmarked.pdf';
 const numericCompare = new Intl.Collator(undefined, { numeric: true }).compare;
 
 describe('handbook fixture (font path)', () => {
@@ -61,6 +62,44 @@ describe('handbook fixture (font path)', () => {
     expect(overridden.sections.length).toBeGreaterThanOrEqual(50);
     const numbered = overridden.sections.filter((s) => /^\d+(\.\d+)+/.test(s.title));
     expect(numbered.length).toBeGreaterThan(20);
+  });
+});
+
+describe('handbook fixture (outline path, bookmarked copy)', () => {
+  let doc: Document;
+  beforeAll(async () => {
+    doc = await extract(HANDBOOK_BOOKMARKED);
+  });
+
+  it('auto-selects outline when bookmarks are present', () => {
+    expect(doc.strategy).toBe('outline');
+  });
+
+  it('keeps consecutive same-page bookmarks with distinct titles', () => {
+    expect(doc.sections.length).toBeGreaterThanOrEqual(80);
+    const titles = doc.sections.map((s) => s.title);
+    for (const re of [
+      /^2\.1\b.*About the Company/,
+      /^2\.2\b.*Ethics Code/,
+      /^2\.3\b.*Mission Statement/,
+      /^3\.1\b.*Accommodations for Pregnancy/,
+      /^3\.3\b.*Disability Accommodation/,
+      /^3\.8\b.*Religious Accommodation/,
+    ]) {
+      expect(titles.some((t) => re.test(t))).toBe(true);
+    }
+  });
+
+  it('emits monotonic page ranges (same-page entries allowed)', () => {
+    for (let i = 1; i < doc.sections.length; i++) {
+      const prev = doc.sections[i - 1]!;
+      const cur = doc.sections[i]!;
+      expect(cur.pageStart).toBeGreaterThanOrEqual(prev.pageStart);
+    }
+  });
+
+  it('snapshots bookmarked outline titles', () => {
+    expect(doc.sections.map((s) => s.title)).toMatchSnapshot();
   });
 });
 

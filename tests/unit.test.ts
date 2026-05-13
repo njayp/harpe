@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
   bodyFontSize,
+  byOutline,
   detectHeadings,
   sanityCheck,
   scoreSections,
   slugify,
   uniqueSlugs,
 } from '../src/sections.js';
-import type { Line, Section } from '../src/types.js';
+import type { Line, OutlineEntry, Section } from '../src/types.js';
 
 describe('slugify', () => {
   it('ASCII-folds and kebab-cases', () => {
@@ -136,6 +137,34 @@ describe('sanityCheck', () => {
       section('c', 'C', 50),
     ];
     expect(() => sanityCheck(sections, 200)).not.toThrow();
+  });
+});
+
+describe('byOutline', () => {
+  it('keeps consecutive bookmarks on the same page when titles differ', () => {
+    const lines: Line[] = [
+      { page: 7, y: 800, fontSize: 11, text: 'chapter intro paragraph' },
+      { page: 8, y: 800, fontSize: 11, text: 'next-page body' },
+    ];
+    const outline: OutlineEntry[] = [
+      { title: '3.0 Hiring', pageNumber: 7, level: 0 },
+      { title: '3.1 Accommodations', pageNumber: 7, level: 1 },
+      { title: '3.2 Conflicts', pageNumber: 8, level: 1 },
+    ];
+    expect(byOutline(lines, outline, 8).map((s) => s.title)).toEqual([
+      '3.0 Hiring',
+      '3.1 Accommodations',
+      '3.2 Conflicts',
+    ]);
+  });
+
+  it('still collapses true duplicates (same title + page)', () => {
+    const outline: OutlineEntry[] = [
+      { title: 'Intro', pageNumber: 5, level: 0 },
+      { title: 'Intro', pageNumber: 5, level: 0 },
+      { title: 'Body', pageNumber: 6, level: 0 },
+    ];
+    expect(byOutline([], outline, 10).map((s) => s.title)).toEqual(['Intro', 'Body']);
   });
 });
 
